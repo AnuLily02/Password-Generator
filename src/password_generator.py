@@ -1,122 +1,90 @@
-import secrets
 import string
-#password function 
-def generate_password(length, use_uppercase, use_lowercase,
-                      use_numbers, use_symbols):
 
-    characters = ""
 
-    if use_uppercase:
-        characters += string.ascii_uppercase
+def analyze_password(password):
+    """Count how many of each type of character the password has."""
+    return {
+        "length": len(password),
+        "uppercase": sum(1 for c in password if c.isupper()),
+        "lowercase": sum(1 for c in password if c.islower()),
+        "numbers": sum(1 for c in password if c.isdigit()),
+        "special": sum(1 for c in password if c in string.punctuation),
+    }
 
-    if use_lowercase:
-        characters += string.ascii_lowercase
 
-    if use_numbers:
-        characters += string.digits
-
-    if use_symbols:
-        characters += string.punctuation
-
-    if not characters:
-        raise ValueError("At least one character type must be selected.")
-
-    password = "".join(
-        secrets.choice(characters)
-        for _ in range(length)
-    )
-
-    return password
-# password strength checker 
-def check_strength(password):
-
+def check_strength(stats):
     score = 0
 
-    if len(password) >= 8:
+    # Length
+    if stats["length"] >= 8:
+        score += 1
+    if stats["length"] >= 12:
         score += 1
 
-    if any(char.islower() for char in password):
+    # Character types
+    if stats["uppercase"] > 0:
+        score += 1
+    if stats["lowercase"] > 0:
+        score += 1
+    if stats["numbers"] > 0:
+        score += 1
+    if stats["special"] > 0:
         score += 1
 
-    if any(char.isupper() for char in password):
-        score += 1
-
-    if any(char.isdigit() for char in password):
-        score += 1
-
-    if any(char in string.punctuation for char in password):
-        score += 1
-
-    if score <= 2:
+    if score <= 3:
         return "Weak"
-
-    elif score <= 4:
-        return "Moderate"
-
+    elif score <= 5:
+        return "Medium"
     else:
         return "Strong"
 
 
-#Get user input 
-def get_yes_no(question):
+def give_suggestions(stats):
+    tips = []
 
-    while True:
+    if stats["length"] < 12:
+        tips.append("Use at least 12 characters.")
+    if stats["uppercase"] == 0:
+        tips.append("Add uppercase letters (A-Z).")
+    if stats["lowercase"] == 0:
+        tips.append("Add lowercase letters (a-z).")
+    if stats["numbers"] == 0:
+        tips.append("Add numbers (0-9).")
+    if stats["special"] == 0:
+        tips.append("Add special characters (!@#$%).")
 
-        answer = input(question + " (y/n): ").strip().lower()
+    return tips
 
-        if answer in ["y", "yes"]:
-            return True
 
-        if answer in ["n", "no"]:
-            return False
+print("=" * 45)
+print("        PASSWORD STRENGTH CHECKER")
+print("=" * 45)
 
-        print("Please enter y or n.")
+while True:
+    password = input("\nEnter a password (or type 'quit' to exit): ")
 
-#main function 
-def main():
+    if password.lower() == "quit":
+        print("Goodbye!")
+        break
 
-    print("=" * 45)
-    print("        PASSWORD GENERATOR")
-    print("=" * 45)
+    if not password:
+        print("Password cannot be empty.")
+        continue
 
-    while True:
+    stats = analyze_password(password)
 
-        try:
-            length = int(input("\nPassword length: "))
+    print("\nPassword Analysis:")
+    print(f"  Total characters  : {stats['length']}")
+    print(f"  Uppercase letters : {stats['uppercase']}")
+    print(f"  Lowercase letters : {stats['lowercase']}")
+    print(f"  Numbers           : {stats['numbers']}")
+    print(f"  Special characters: {stats['special']}")
 
-            if length < 4:
-                print("Password length should be at least 4.")
-                continue
+    print("\nPassword Strength:")
+    print(check_strength(stats))
 
-            break
-
-        except ValueError:
-            print("Please enter a valid number.")
-
-    use_uppercase = get_yes_no("Include uppercase letters?")
-    use_lowercase = get_yes_no("Include lowercase letters?")
-    use_numbers = get_yes_no("Include numbers?")
-    use_symbols = get_yes_no("Include special characters?")
-
-    try:
-
-        password = generate_password(
-            length,
-            use_uppercase,
-            use_lowercase,
-            use_numbers,
-            use_symbols
-        )
-
-        print("\nGenerated Password:")
-        print(password)
-
-        print("\nPassword Strength:")
-        print(check_strength(password))
-
-    except ValueError as error:
-
-        print("\nError:", error)
-
-if __name__ == "__main__":
-    main()
+    tips = give_suggestions(stats)
+    if tips:
+        print("\nHow to make it stronger:")
+        for tip in tips:
+            print(f"  - {tip}")
